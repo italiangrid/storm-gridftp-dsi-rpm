@@ -9,7 +9,7 @@ GridFTP2 DSI calculates checksum on the fly for StoRM.
 First clone the repo:
 
 ```bash
-git clone https://github.com/italiangrid/storm-gridftp-dsi.git
+git clone https://github.com/italiangrid/storm-gridftp-dsi-rpm.git
 ```
 
 then run:
