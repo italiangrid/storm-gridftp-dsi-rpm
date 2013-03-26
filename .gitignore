@@ -11,3 +11,6 @@ Makefile.in
 /depcomp
 /install-sh
 /missing
+/rpmbuild
+/sources
+/storm-globus-gridftp-server.spec

@@ -1,0 +1,157 @@
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2006-2010.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+%define libtype      %{_libdir}
+
+%define prefixname   storm
+%define shortname    globus-frontend-server
+%define longname     storm-globus-gridftp-server
+
+
+Name: 		storm-globus-gridftp-server
+Version: 	1.2.0
+Release: 	5%{?dist}
+
+Vendor:         EMI
+Packager:       Elisabetta Ronchieri <elisabetta.ronchieri@cnaf.infn.it>
+License:        Apache License, Version 2.0
+URL: 		https://github.com/italiangrid/storm-gridftp-dsi.git           
+
+Source: 	%{name}-%{version}.tar.gz
+BuildRoot: 	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+Group:          Applications/Libraries
+AutoReqProv:    yes
+Summary:        The StoRM GridFtp DSI component
+
+BuildRequires: automake
+BuildRequires: autoconf
+BuildRequires: libtool
+BuildRequires: zlib
+BuildRequires: openssl-devel
+BuildRequires: libattr-devel
+BuildRequires: globus-gridftp-server-devel
+BuildRequires: globus-ftp-control-devel
+BuildRequires: globus-ftp-client-devel
+
+Requires(post):   chkconfig
+Requires(preun):  chkconfig
+Requires(preun):  initscripts
+Requires(postun): initscripts
+
+Requires: globus-gssapi-gsi
+Requires: openssl
+Requires: zlib
+Requires: globus-gridftp-server-progs
+
+%define debug_package %{nil}
+
+%description
+GridFTP2 DSI calculates checksum on the fly for StoRM
+
+%prep
+%setup -q -n storm-globus-gridftp-server
+
+%build
+./bootstrap
+./configure --prefix=/usr --sysconfdir=/etc --datadir=/usr/share --localstatedir=/var   
+make
+
+%install
+if [ -d $RPM_BUILD_ROOT ]; then rm -rf $RPM_BUILD_ROOT; fi
+mkdir -p $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+rm -f $RPM_BUILD_ROOT/%{libtype}/libglobus_gridftp_server_StoRM.la
+rm -f $RPM_BUILD_ROOT/%{libtype}/libglobus_gridftp_server_StoRM.a
+mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/log/%{prefixname}
+
+%post
+#during an install, the value of the argument passed in is 1
+#during an unupgrade, the value of the argument passed in is 2
+if [ "$1" = "1" ] ; then
+  echo 'add service to chkconfig'
+  /sbin/chkconfig --add storm-globus-gridftp
+fi;
+if [ "$1" = "2" ] ; then
+  echo "The StoRM GridFtp DSI server has been upgraded but NOT configured yet.
+You need to use yaim to configure the server.
+"
+  echo 'stop service'
+  /sbin/service storm-globus-gridftp stop >/dev/null 2>&1 || :
+fi;
+
+%preun
+#during an upgrade, the value of the argument passed in is 1
+#during an uninstall, the value of the argument passed in is 0
+if [ "$1" = "0" ] ; then
+  echo 'stop service'
+  /sbin/service storm-globus-gridftp stop >/dev/null 2>&1 || :
+  echo 'del service from chkconfig'
+  /sbin/chkconfig --del storm-globus-gridftp
+fi;
+if [ "$1" = "1" ] ; then
+  echo "The StoRM GridFtp DSI server has been upgraded but NOT configured yet.
+You need to use yaim to configure the server.
+"
+  echo 'stop service'
+  /sbin/service storm-globus-gridftp stop >/dev/null 2>&1 || :
+fi;
+
+%postun
+#during an upgrade, the value of the argument passed in is 1
+#during an uninstall, the value of the argument passed in is 0
+if [ "$1" = "1" ] ; then
+  echo "The StoRM GridFtp DSI server has been upgraded but NOT configured yet.
+You need to use yaim to configure the server.
+"
+  echo 'stop service'
+  /sbin/service storm-globus-gridftp stop >/dev/null 2>&1 || :
+fi;
+if [ "$1" = "0" ] ; then
+  echo 'remove old file'
+  rm -f /etc/init.d/storm-globus-gridftp.*
+fi
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files 
+%defattr(-,root,root)
+%{_sysconfdir}/init.d/storm-globus-gridftp
+%config(noreplace) %attr(644,root,root) %{_sysconfdir}/logrotate.d/storm-globus-gridftp
+
+%{libtype}/libglobus_gridftp_server_StoRM.so
+%{libtype}/libglobus_gridftp_server_StoRM.so.0
+%{libtype}/libglobus_gridftp_server_StoRM.so.0.0.0
+
+%doc %dir %{_datadir}/doc/%{name}-%{version}
+%doc %{_datadir}/doc/%{name}-%{version}/ChangeLog
+%doc %{_datadir}/doc/%{name}-%{version}/CREDITS
+%doc %{_datadir}/doc/%{name}-%{version}/LICENSE
+%doc %{_datadir}/doc/%{name}-%{version}/README
+
+%dir %{_localstatedir}/log/%{prefixname}
+
+%changelog
+* Mon May 02 2011 Elisabetta Roncheiri <elisabetta.ronchieri@cnaf.infn.it> - 1.1.0-5.sl5
+- Added BuildRequires in spec file
+- Added src in the src tar file
+- Cleaned configuration file
+
+* Thu Apr 07 2011 Elisabetta Ronchieri> <elisabetta.ronchieri@cnaf.infn.it> - 1.1.0-4.sl5
+- Renamed globus-gridftp in storm-globus-gridftp
+- Changed log path and log file names
+
+* Fri Feb 24 2011 Elisabetta Ronchieri> <elisabetta.ronchieri@cnaf.infn.it> - 1.1.0-2.sl5
+- Added Fedora guidelines
